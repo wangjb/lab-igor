@@ -18,15 +18,22 @@
 // Output: none
 // 2016/10/17, written by JB
 
-function ListFigures(aaa,bbb,ccc,ddd)
-	variable aaa //starting file number
-	variable bbb //ending file number
-	string ccc //either "insitu" or "tof"
-	variable ddd //need sorting or not
-	
+function ListFigures(dd, fn1, fn2, x1, x2, y1, y2, sorting)
+       string dd // date of data, format should be like "16Nov2016"
+       variable fn1 // start filenumber
+       variable fn2 // end filenumber
+       variable x1 // left position of the region to be shown
+       variable x2 // right position of the region to be shown
+       variable y1 // top position of the region to be shown
+       variable y2 // bottom position of the region to be shown
+       variable sorting //sorting or not
+
+	string filepath = "J:\\JB's experiment\\rawdata\\"+"Flea3_"
 	string sss // formated filenumber
 	string figname // name of the figures
+	
 	variable i
+	variable/D n_file = fn2 - fn1 + 1
 	wave p = root:fittings:parameters
 	//make/O/N=(1,6) ODs
 	
@@ -37,150 +44,67 @@ function ListFigures(aaa,bbb,ccc,ddd)
 	wave para = root:fittings:parameters
 	wave/T filenames = root:Flea3:IndexedWaves:FileNames
 	
-	NewDataFolder/O root:gfigures
+	//for taking image
 	//NewDataFolder/O root:fittings
 	//NewPath path1, "J:"
 	//NewMovie/A/F=2/O/P=path1
-	if(ddd == 1)
-		SetDataFolder root:Flea3
-		redimension/N=(DimSize(filenames,0)) pulsetime
-		for(i = aaa; i <= bbb; i = i+1)
+	
+	NewDataFolder/O root:gfigures
+	SetDataFolder root:Flea3
+	if(sorting == 1)
+		redimension/N=(n_file) pulsetime
+		for(i = fn1; i <= fn2; i = i+1)
 			sprintf sss,"%04.0f", i
-			AutoRunV3("Flea3","J:\\JB's experiment\\rawdata\\Flea3_16Nov2016_"+sss+".ibw") 
+			AutoRunV3("Flea3",filepath+sss+".ibw") 
 			duplicate/O optdepth $("raw"+sss)
 		endfor
 		duplicate/O pulsetime sortidx
 		MakeIndex pulsetime sortidx
-		for(i=0; i<DimSize(pulsetime,0); i=i+1)
+		make/T/O/N=(n_file) filenumber // sorted filenumber
+		for(i=0; i < n_file; i=i+1)
 			splitstring /E="_([[:digit:]]+).ibw" filenames[sortidx[i]], sss
-			//AutoRunV3("Flea3","J:\\JB's experiment\\rawdata\\Flea3_11Oct2016_"+sss+".ibw") 
-			SetDataFolder root:gfigures
-			if(stringmatch(ccc,"insitu"))
-				figname = "a20161027"+sss+"_insitu"
-
-				// Modify the output pictures here
-				duplicate/o/R=(-100,-30)(70,140) root:Flea3:optdepth $figname
-				//duplicate/o/R=(-105,-45)(90,150) root:Flea3:optdepth $figname
-			
-				//Fittings for atom number and adiabatic radius
-				SetDataFolder root:fittings
-				imagetransform/G=407 getcol root:Flea3:optdepth
-				duplicate/o root:fittings:W_ExtractedCol root:gfigures:$("h_a20161012"+sss+"_insitu")
-				imagetransform/G=190 getrow root:Flea3:optdepth
-				duplicate/o root:fittings:W_ExtractedRow root:gfigures:$("v_a20161012"+sss+"_insitu")
-				//SetDataFolder root:fittings
-				//n_ring(root:Flea3:optdepth)
-			
-				SetDataFolder root:gfigures
-				//Create image
-				NewImage  $figname
-				//SetAxis/R left 70,140
-				SetAxis/R left 90,150
-				ModifyGraph height={Aspect,1}
-				ModifyImage $figname ctab= {-0.1,2,Rainbow,1}
-			
-				//Edit the textbox here
-				TextBox/C/N=text0 "\\Z0720161012"+sss+" mf=+1, in situ\rraman peak at 100us, detune 250khz\rramptime="+num2str(pulsetime[i-aaa]*10^3)+"ms"
-				TextBox/C/N=text0/X=5/Y=80
-			elseif(stringmatch(ccc,"tof"))
-				figname = "a20161011"+sss+"_tof"
-			
-				// Modify the output pictures here
-				//duplicate/o/R=(-150,50)(60,260) root:Flea3:optdepth $figname
-				//duplicate/o/R=(-230,-30)(0,200) root:Flea3:optdepth $figname
-				duplicate/o/R=(-110,90)(-480,-280) root:Flea3:$("raw"+sss) $figname
-				//SetDataFolder root:fittings
-				//n_ring(root:Flea3:optdepth)
-			
-				SetDataFolder root:gfigures
-				//Create image
-				NewImage $figname
-				//SetAxis/R left 0,200
-				//SetAxis/R left 60,260
-				ModifyGraph height={Aspect,1}
-				ModifyImage $figname ctab= {-0.1,2,Rainbow,1}
-				//Edit the textbox here
-				//TextBox/C/N=text0 "\\Z0720161028"+sss+"\rmf=+1, TOF=24ms, peak rabi rate 50us\rramptime=4ms, holdtime="+num2str(holdtime[i-aaa]*10^3)+"ms"
-				TextBox/C/N=text0 "\\Z0720161011"+sss+" mf=0, TOF\rraman pulsetime="+num2str(pulsetime[sortidx[i]]*10^6)+"us"
-				TextBox/C/N=text0/X=10.00/Y=85
-			endif
-			//N_ring(root:Flea3:optdepth)
-			//matrixop/o p = p^t
-			//concatenate/O/NP=0 {ODs,p}, temp_w
-			//duplicate/O temp_w, ODs
-			//ModifyGraph width=288
-			//AddMovieFrame
-			//DoUpdate
-		endfor
+			filenumber[i] = sss
+		endfor	
 	else
-		for(i = aaa; i <= bbb; i = i+1)
+		make/T/O/N=(n_file) filenumber
+		for(i = fn1; i <= fn2; i = i+1)
 			sprintf sss,"%04.0f", i
-			AutoRunV3("Flea3","J:\\JB's experiment\\rawdata\\Flea3_16Nov2016_"+sss+".ibw") 
-			SetDataFolder root:gfigures
-			if(stringmatch(ccc,"insitu"))
-				figname = "a20161024"+sss+"_insitu"
-
-				// Modify the output pictures here
-				duplicate/o/R=(-110,-40)(80,150) root:Flea3:optdepth $figname
-				//duplicate/o/R=(-65,-5)(125,185) root:Flea3:optdepth $figname
-			
-				//Fittings for atom number and adiabatic radius
-				SetDataFolder root:fittings
-				imagetransform/G=409 getcol root:Flea3:optdepth
-				duplicate/o root:fittings:W_ExtractedCol root:gfigures:$("h_a20161024"+sss+"_insitu")
-				imagetransform/G=190 getrow root:Flea3:optdepth
-				duplicate/o root:fittings:W_ExtractedRow root:gfigures:$("v_a20161024"+sss+"_insitu")
-				//SetDataFolder root:fittings
-				//n_ring(root:Flea3:optdepth)
-			
-				//SetDataFolder root:gfigures
-				//Create image
-				//NewImage  $figname
-				//SetAxis/R left 70,140
-				//SetAxis/R left 125,185
-				//ModifyGraph height={Aspect,1}
-				//ModifyImage $figname ctab= {-0.1,2,Rainbow,1}
-			
-				//Edit the textbox here
-				//TextBox/C/N=text0 "\\Z0720161012"+sss+" mf=+1, in situ\rraman peak at 100us, detune 250khz\rramptime="+num2str(pulsetime[i-aaa]*10^3)+"ms"
-				//TextBox/C/N=text0 "\\Z0720161111"+sss+" mf=+1, insitu\rraman pulsetime="+num2str(pulsetime[i-aaa]*10^3)+"ms"
-				//TextBox/C/N=text0/X=5/Y=80
-			elseif(stringmatch(ccc,"tof"))
-				figname = "a20161116"+sss+"_tof"
-			
-				// Modify the output pictures here
-				duplicate/o/R=(-170,90)(40,300) root:Flea3:optdepth $figname
-				//duplicate/o/R=(-230,-30)(0,200) root:Flea3:optdepth $figname
-				//duplicate/o/R=(-110,90)(-480,-280) root:Flea3:optdepth $figname
-				//SetDataFolder root:fittings
-				//n_ring(root:Flea3:optdepth)
-			
-				SetDataFolder root:gfigures
-				//Create image
-				NewImage $figname
-				//SetAxis/R left 0,200
-				SetAxis/R left 40, 300
-				ModifyGraph height={Aspect,1}
-				ModifyImage $figname ctab= {-0.1,2,Rainbow,1}
-				//Edit the textbox here
-				TextBox/C/N=text0 "\\Z0720161116"+sss+"\rmf=-1, TOF=24ms, peak rabi rate~100us\rramp to -10 kHz, then hold, then ramp\rramptime=7.5ms, holdtime="+num2str(holdtime[i-aaa]*10^3)+"ms"
-				//TextBox/C/N=text0 "\\Z0720161111"+sss+" mf=0, TOF\rraman pulsetime="+num2str(pulsetime[i-aaa]*10^3)+"ms"
-				TextBox/C/N=text0/X=-5/Y=80
-			endif
-			//N_ring(root:Flea3:optdepth)
-			//matrixop/o p = p^t
-			//concatenate/O/NP=0 {ODs,p}, temp_w
-			//duplicate/O temp_w, ODs
-			//ModifyGraph width=288
-			//AddMovieFrame
-			//DoUpdate
+			filenumber[i-fn1] = sss
 		endfor
-		//DeletePoints 0,1, ODs
-		//KillWaves temp_w
-		//CloseMovie
 	endif
 	
-Execute "TileWindows/G=30/O=1/W=(5,25,1427,673)"
+	for(i = 0; i < n_file; i = i+1)
+		AutoRunV3("Flea3",filepath+dd+"_"+filenumber[i]+".ibw") 
+		SetDataFolder root:gfigures
+			figname = "a" + dd + "_" + filenumber[i] + "_insitu"
+			// Modify the output pictures here
+			duplicate/O/R=(x1, x2)(y1, y2) root:Flea3:optdepth $figname
+			//R=(-105,-45)(90,150) 
+		
+			//Fittings for atom number and adiabatic radius
+			//SetDataFolder root:fittings
+			//imagetransform/G=407 getcol root:Flea3:optdepth
+			//duplicate/o root:fittings:W_ExtractedCol root:gfigures:$("h_a" + dd + "_" +sss+"_insitu")
+			//imagetransform/G=190 getrow root:Flea3:optdepth
+			//duplicate/o root:fittings:W_ExtractedRow root:gfigures:$("h_v" + dd + "_" +sss+"_insitu")
+			//SetDataFolder root:fittings
+			//n_ring(root:Flea3:optdepth)
+			
+			SetDataFolder root:gfigures
+			//Create image
+			NewImage  $figname
+			SetAxis/R left y1,y2
+			ModifyGraph height={Aspect,1}
+			ModifyImage $figname ctab= {-0.1,2,Rainbow,1}
+			
+			//Edit the textbox here
+			TextBox/C/N=text0 "\\Z07"+dd+"_"+sss+" mf=+1, in situ\rraman peak at 100us, detune 250khz\rramptime="+num2str(holdtime[i]*10^3)+"ms"
+			TextBox/C/N=text0/X=5/Y=80
+		endfor
+	//DeletePoints 0,1, ODs
+	//KillWaves temp_w
+	//CloseMovie
+//Execute "TileWindows/G=30/O=1/W=(5,25,1427,673)"
 end
 
 // "peak_radius" is used for calculating adiabatic radius of ring BEC
