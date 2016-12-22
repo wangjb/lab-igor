@@ -28,7 +28,7 @@ function ListFigures(dd, fn1, fn2, x1, x2, y1, y2, sorting)
        variable y2 // bottom position of the region to be shown
        variable sorting //sorting or not
 
-	string filepath = "J:\\JB's experiment\\rawdata\\"+"Flea3_"
+	string filepath = "J:\\JB\'s experiment\\rawdata\\"+"Flea3_"
 	string sss // formated filenumber
 	string figname // name of the figures
 	
@@ -43,20 +43,25 @@ function ListFigures(dd, fn1, fn2, x1, x2, y1, y2, sorting)
 	wave sortidx = root:Flea3:sortidx
 	wave para = root:fittings:parameters
 	wave/T filenames = root:Flea3:IndexedWaves:FileNames
+	wave wcoef = root:fittings:W_coef
+	wave havehole = root:fittings:'havingHoles_img1125_2001-2030'
+	wave adrffreq = root:Flea3:IndexedWaves:adrffreq
 	
 	//for taking image
 	//NewDataFolder/O root:fittings
 	//NewPath path1, "J:"
-	//NewMovie/A/F=2/O/P=path1
+	//NewMovie/A/F=5/O/P=path1
 	
 	NewDataFolder/O root:gfigures
 	SetDataFolder root:Flea3
+	
 	if(sorting == 1)
 		redimension/N=(n_file) pulsetime
 		for(i = fn1; i <= fn2; i = i+1)
 			sprintf sss,"%04.0f", i
-			AutoRunV3("Flea3",filepath+sss+".ibw") 
-			duplicate/O optdepth $("raw"+sss)
+			//print filepath+dd+"_"+sss+".ibw"
+			AutoRunV3("Flea3",filepath+dd+"_"+sss+".ibw") 
+			//duplicate/O optdepth $("raw"+sss)
 		endfor
 		duplicate/O pulsetime sortidx
 		MakeIndex pulsetime sortidx
@@ -72,39 +77,77 @@ function ListFigures(dd, fn1, fn2, x1, x2, y1, y2, sorting)
 			filenumber[i-fn1] = sss
 		endfor
 	endif
-	
+	//SetDataFolder root:fittings
+	//make/O/N=(n_file,4) centers=nan
+	//SetDataFolder root:gfigures
 	for(i = 0; i < n_file; i = i+1)
 		AutoRunV3("Flea3",filepath+dd+"_"+filenumber[i]+".ibw") 
-		SetDataFolder root:gfigures
-			figname = "a" + dd + "_" + filenumber[i] + "_insitu"
-			// Modify the output pictures here
-			duplicate/O/R=(x1, x2)(y1, y2) root:Flea3:optdepth $figname
-			//R=(-105,-45)(90,150) 
+		//SetDataFolder root:gfigures
+		//figname = "a" + dd + "_" + filenumber[i]
+		// Modify the output pictures here
+		//duplicate/O/R=(x1, x2)(y1, y2) root:Flea3:optdepth $figname
+		//R=(-105,-45)(90,150) 
 		
-			//Fittings for atom number and adiabatic radius
-			//SetDataFolder root:fittings
-			//imagetransform/G=407 getcol root:Flea3:optdepth
-			//duplicate/o root:fittings:W_ExtractedCol root:gfigures:$("h_a" + dd + "_" +sss+"_insitu")
-			//imagetransform/G=190 getrow root:Flea3:optdepth
-			//duplicate/o root:fittings:W_ExtractedRow root:gfigures:$("h_v" + dd + "_" +sss+"_insitu")
-			//SetDataFolder root:fittings
-			//n_ring(root:Flea3:optdepth)
-			
-			SetDataFolder root:gfigures
-			//Create image
-			NewImage  $figname
-			SetAxis/R left y1,y2
-			ModifyGraph height={Aspect,1}
-			ModifyImage $figname ctab= {-0.1,2,Rainbow,1}
-			
-			//Edit the textbox here
-			TextBox/C/N=text0 "\\Z07"+dd+"_"+sss+" mf=+1, in situ\rraman peak at 100us, detune 250khz\rramptime="+num2str(holdtime[i]*10^3)+"ms"
-			TextBox/C/N=text0/X=5/Y=80
-		endfor
+		//SetDataFolder root:gfigures
+		//Create image
+		//NewImage  $figname
+		//SetAxis/R left y1,y2
+		//ModifyGraph width=288, height={Aspect,1}
+		//ModifyGraph height={Aspect,1}
+		//ModifyImage $figname ctab= {-0.1,2,Rainbow,1}
+		
+		//Edit the textbox here
+		//TextBox/C/N=text0 "\\Z07"+dd+"_"+filenumber[i]+" mf=+1, TOF 24ms\rraman peak at 100us, holdtime 13ms\rramptime 7.5ms, detune="+num2str((adrffreq[i]-adrffreq[0])*10^3)+" kHz"
+		//TextBox/C/N=text0 "\\Z07"+dd+"_"+filenumber[i]+" pulsetime="+num2str(pulsetime[sortidx[i]]*10^6)+" us\r number = "+ num2str(n_ring($figname, x1, x2, y1, y2,0))
+		//TextBox/C/N=text0 "\\Z07"+dd+"_"+filenumber[i]+" mf=-1, TOF 24ms\rN="+num2str(para[5])
+		//sprintf sss,"%05.1f", holdtime[i]*10^3
+		//TextBox/C/N=text0 "\Z18Hold time = "+sss+" ms"
+		//TextBox/C/N=text0/X=1/Y=90
+		//TextBox/C/N=text0 "\\Z07"+dd+"_"+filenumber[i]
+
+		//Fittings for atom number and adiabatic radius				
+		//SetDataFolder root:fittings
+		//CurveFit/NTHR=0/Q Gauss2D  root:gfigures:$figname
+		//K6 = 0;
+		//CurveFit/Q/H="0000001"/NTHR=0 Gauss2D   root:gfigures:$figname
+
+
+		//do
+		//Make/D/N=13/O W_coef=0
+		//if ( havehole[i] == 5)
+			//W_coef[0] = {0.0007,13,-32,4.4,159,4.4,0,-13,-31,7,159.8,6,0}
+			//W_coef[0] = {0.1,0.4,-35,5.5,163,5.25,0,-5,-40,4,160,4,0} // with BECwithHole2 for Dec05
+			//W_coef[0] = {0.1,4,-35,5.5,163,5.25,0,-5,-38,4,162,4,0} // with BECwithHole2 for Dec05
+		//	W_coef[0] = {-0.01,1,-35,5,155,7,0,5,-31,10,159,5,0} // with BECwithHole2 for Dec06
+			//W_coef[0] = {0.004,5+enoise(5),-39.8+enoise(0.2),4.8,154+enoise(0.2),5.78,0,-6+enoise(1),-35.8,5+enoise(0.2),156.8,5+enoise(0.2),0}
+		//	W_coef={-0.00075845,0.48922,-40.32+enoise(0.2),4.0706,154.48+enoise(0.2),4.328,0.027159,44.071,-36.961+enoise(0.2),8.6943+enoise(0.2),155.57+enoise(0.2),44.991+enoise(0.2),-0.46734}
+		 // 	W_coef={0.012218,7.3559+enoise(1),-35.627+enoise(1),4.2407,153.75+enoise(1),3.8687,0,-2.4862+enoise(1),-.436+enoise(1),14.659,154+enoise(1),3.9898,0}	
+		  //	FuncFitMD/H="0000001000001"/Q/NTHR=0 BECwithHole2 W_coef  root:gfigures:$figname
+			//centers[i][0] = wcoef[2]
+			//centers[i][1] = wcoef[4]
+		//	centers[i][2] = wcoef[8]
+		//	centers[i][3] = wcoef[10]
+		//while(centers [i][2] > -41)
+		//else
+		//	CurveFit/NTHR=0/Q Gauss2D  root:gfigures:$figname
+		//	centers[i][0] = wcoef[2]
+		//	centers[i][1] = wcoef[4]
+		//	centers[i][2] = nan
+		//	centers[i][3] = nan
+		//endif
+		//imagetransform/G=407 getcol root:Flea3:optdepth
+		//duplicate/o root:fittings:W_ExtractedCol root:gfigures:$("h_a" + dd + "_" +sss+"_insitu")
+		//imagetransform/G=190 getrow root:Flea3:optdepth
+		//duplicate/o root:fittings:W_ExtractedRow root:gfigures:$("h_v" + dd + "_" +sss+"_insitu")
+		//DoUpdate
+		//AddMovieFrame
+	endfor
 	//DeletePoints 0,1, ODs
 	//KillWaves temp_w
 	//CloseMovie
 //Execute "TileWindows/G=30/O=1/W=(5,25,1427,673)"
+//Execute "TileWindows/G=5/O=1/W=(5,25,1427,673)"
+//Execute "TileWindows/G=5/A=(4,0)/O=1/W=(5,29,1427,736)"
 end
 
 // "peak_radius" is used for calculating adiabatic radius of ring BEC
@@ -168,112 +211,143 @@ end
 //		  row position of maximum, column position of maximum, range of worked out ROI, background OD, sum OD, sum OD subtracted from background OD, atom #
 // 2016/10/17, written by JB
 
-function N_ring(ww)
-	wave ww // original raw image
-	wave stats = root:fittings:M_WaveStats
+function/D N_ring(optdepth, x1, x2, y1, y2, resize)
+	wave optdepth // original raw image
+	variable resize
+	// XY image
+	variable x1 //200//100
+	variable x2 //240//330
+	variable y1 //410//290
+	variable y2 //450//550
+	
+	wave wcoef = root:fittings:W_coef
 	variable rMaxLoc // location of maximum in row direction
 	variable cMaxLoc // location of maximum in column direction
-	variable rMaxLocO // location of maximum in row direction at raw image
-	variable cMaxLocO // location of maximum in column direction at raw image
-	variable OD = 0 // Summation of OD of image of interest
-	variable avg_OD // average of background OD
-	variable range = 50 // the initial region of interest
+	variable range=100  // the initial region of interest
 	variable step = 2 // this is the diffrenece between summation area of temp_inner_sum and of  temp_outer_sum
-//	variable r_sum =0
-//	variable ri_sum = 0
-//	variable c_sum = 0
-//	variable ci_sum = 0
 	variable temp_inner_sum = 0 // for summation of OD
 	variable temp_outer_sum = 0 // for summation of OD
-	variable range4back = 100 // region for background
+	variable range4back = 75 // region for background
 	variable back_sum = 0 // for summation of background OD
-	variable magnification = 4 // magnification of image
+	variable magnification = 2 // magnification of image
 	variable pixelsize = 5.6 // pixel size of the camera 
-	variable i
-	variable j
+	variable OD = 0 // Summation of OD of image of interest
+	variable avg_OD = 0 //
+	variable i, j
+	variable threshold
+	
 
+	
+	// background range
+//	variable x1_back = 180
+//	variable x2_back = 380
+//	variable y1_back = 80
+//	variable y2_back = 280
+	
+	//Histogram bin setting
+	variable hist_offset = -2
+	variable hist_binsize = 0.001
+	variable hist_numbin = 7000
+			
 	NewDataFolder/O root:fittings
 	SetDataFolder root:fittings
 	make/O/N=7 parameters
-	
-	// find center of the cloud
-	Duplicate/o/R=(-300,100)(-150,270) ww, w
-	matrixop/o sr = sumrows(w)
-	matrixop/o sc = sumcols(w)^t
-	WaveStats/Q/W sr
-	rMaxLoc = stats[11]
-	WaveStats/Q/W sc
-	cMaxLoc = stats[11]
-	duplicate/o/R=(DimOffset(w, 0) + (rMaxLoc-range)*1.4, DimOffset(w, 0) + (rMaxLoc+range)*1.4)(DimOffset(w, 1) + (cMaxLoc-range)*1.4,DimOffset(w, 1) + (cMaxLoc+range)*1.4) w IOR0
-//	r_sum = 0
-//	ri_sum = 0
-//	c_sum = 0
-//	ci_sum = 0
-	// calculating the center of mass of the selected area to find center of the cloud more accurately
-	// first finding the center in vertical direction
-//	for (i=-range; i<=range; i=i+1)
-//		for (j=-range; j<=range; j=j+1)
-//			r_sum = r_sum + w[rMaxLoc+i][cMaxLoc+j]*(cMaxLoc+j)
-//			ri_sum = ri_sum + w[rMaxLoc+i][cMaxLoc+j]
-//		endfor
-//		c_sum = r_sum / ri_sum * (rMaxLoc+i)
-//		print r_sum / ri_sum
-//		ci_sum = ci_sum + (rMaxLoc+i)
-//	endfor
-//	rMaxLoc = c_sum / ci_sum
 
-//	r_sum = 0
-//	ri_sum = 0
-//	c_sum = 0
-//	ci_sum = 0
-//	for (j=-range; j<=range; j=j+1)
-//		for (i=-range; i<=range; i=i+1)
-//			c_sum = c_sum + w[rMaxLoc+i][cMaxLoc+j]*(rMaxLoc+i)
-//			ci_sum = ci_sum + (rMaxLoc+i)
-//		endfor
-//		r_sum = c_sum / ci_sum * (cMaxLoc+j)
-//		ri_sum = ri_sum + (cMaxLoc+j)
-//	endfor
-//	cMaxLoc = r_sum / ri_sum
+	//Histogram algo
+	//make/O/N=(DimSize(optdepth,0),DimSize(optdepth,1)) roiwave
+	//roiwave[x1,x2][y1,y2] = 0
+	if(resize==1)
+		duplicate/o/R=(x1,x2)(y1,y2) optdepth ROI
+	else
+		duplicate/o optdepth ROI
+	endif
+	Make/N=(hist_numbin)/O ROI_hist
+	Histogram/B={hist_offset,hist_binsize,hist_numbin} ROI, ROI_hist
 	
+	make/O/N=(DimSize(ROI_hist,0)) ROI_hist_multi
+	ROI_hist_multi = ROI_Hist[p]*(p*hist_binsize+hist_offset)
+	Integrate ROI_hist_multi/D=ROI_hist_multi_INT
+	
+	Make/N=(hist_numbin)/O ROI_hist_count
+	ROI_hist_count = (ROI_hist[x]>0) ? ROI_hist[x] : 0
+	Integrate ROI_hist_count/D=ROI_hist_count_INT
+	
+	K0 = 0;
+	CurveFit/H="1000"/Q/NTHR=0/TBOX=768 gauss  ROI_hist_multi_INT[0,-hist_offset/hist_binsize+50]
+	variable borderpoint = floor(sqrt(-ln((-0.1-wcoef[0])/wcoef[1])*wcoef[3]^2)+wcoef[2])
+	
+	//variable yy=2100
+	if(WaveMax(ROI_hist_multi_INT) > 0)
+		variable pixel_counted = WaveMax(ROI_hist_count_INT) - ROI_hist_count_INT[borderpoint]
+		variable background_point_counted = ROI_hist_count_INT[borderpoint] - ROI_hist_count_INT[-hist_offset/hist_binsize-1]
+		variable avg_backOD = ROI_hist_multi_INT[borderpoint]/background_point_counted
+		OD = WaveMax(ROI_hist_multi_INT) - ROI_hist_multi_INT[borderpoint] - pixel_counted * avg_backOD
+	else
+		OD = 0
+	endif
+	//CurveFit/Q/NTHR=0 gauss ROI_hist[-hist_offset/hist_binsize*3/4,-hist_offset/hist_binsize*5/4]
+	//avg_OD = wcoef[2]
+	//print pixel_counted, background_point_counted, avg_backOD
+	
+	// Find center of the cloud
+//	ImageStats/G={x1,x2,y1,y2} root:Flea3:optdepth // prevent back dead point in CCD's effect
+//	if(V_max > 1)
+//		rMaxLoc = V_maxRowLoc
+//		cMaxLoc = V_maxColLoc
+//		threshold = 0.95
+//	else
+		//CurveFit/NTHR=0/Q Gauss2D  optdepth[x1,x2][y1,y2] 	
+		//rMaxLoc = ceil((wcoef[2]- DimOffset(optdepth, 0))/DimDelta(optdepth,0))
+		//cMaxLoc = ceil((wcoef[4]- DimOffset(optdepth, 1))/DimDelta(optdepth,1))
+		//if (rMaxLoc < x1 || rMaxLoc > x2 || cMaxLoc < y1 || cMaxLoc > y2)
+//			rMaxLoc = 220
+//			cMaxLoc = 433
+		//endif
+//		threshold = 0.86
+//	endif
+//	print rMaxLoc, cMaxLoc, threshold
 	// Find region of interest
-	do 
-		temp_inner_sum = 0
-		temp_outer_sum = 0
-		for (i=-range; i<=range; i=i+1)
-			for (j=-range; j<=range; j=j+1)
-				temp_inner_sum = temp_inner_sum + w[rMaxLoc+i][cMaxLoc+j]
-			endfor
-		endfor
-		for (i=-range-step; i<=range+step; i=i+1)
-			for (j=-range-step; j<=range+step; j=j+1)
-				temp_outer_sum = temp_outer_sum + w[rMaxLoc+i][cMaxLoc+j]
-			endfor
-		endfor
-		range = range - 1
-	while (temp_inner_sum > temp_outer_sum * 0.95)
-
-	// Duplicate image of interest to IOR
-	duplicate/o/R=(DimOffset(w, 0) + (rMaxLoc-range)*1.4, DimOffset(w, 0) + (rMaxLoc+range)*1.4)(DimOffset(w, 1) + (cMaxLoc-range)*1.4,DimOffset(w, 1) + (cMaxLoc+range)*1.4) w IOR
+//	do 
+//		temp_inner_sum = 0
+//		temp_outer_sum = 0
+//		for (i=-range; i<=range; i=i+1)
+//			for (j=-range; j<=range; j=j+1)
+//				temp_inner_sum = temp_inner_sum + optdepth[rMaxLoc+i][cMaxLoc+j]
+//			endfor
+//		endfor
+//		for (i=-range-step; i<=range+step; i=i+1)
+//			for (j=-range-step; j<=range+step; j=j+1)
+//				temp_outer_sum = temp_outer_sum + optdepth[rMaxLoc+i][cMaxLoc+j]
+//			endfor
+//		endfor
+//		range = range - 1
+//	while (temp_inner_sum > temp_outer_sum * threshold)
+//	range = range + 1 +step
+	// Duplicate image of interest to ROI
+//	duplicate/o/R=(DimOffset(optdepth, 0) + (rMaxLoc-range)*1.4, DimOffset(optdepth, 0) + (rMaxLoc+range)*1.4)(DimOffset(optdepth, 1) + (cMaxLoc-range)*1.4,DimOffset(optdepth, 1) + (cMaxLoc+range)*1.4) optdepth ROI
 
 	// Store sum of OD in ROI, here we use  temp_outer_sum as sum OD
-	OD = temp_outer_sum
-	range = range + 1 +step
+//	OD = temp_outer_sum
 
 	// Calculate average of backgroud OD by selecting a region next to the image of interest 
-	back_sum = 0
-	rMaxLocO = ((rMaxLoc*DimDelta(w,0)+DimOffset(w,0))-DimOffset(ww,0))/DimDelta(ww,0)
-	cMaxLocO = ((cMaxLoc*DimDelta(w,1)+DimOffset(w,1))-DimOffset(ww,1))/DimDelta(ww,1)
-	//print rMaxLoc, cMaxLoc, rMaxLocO, cMaxLocO
-	for (i=0; i<2*range4back; i=i+1)
-		for (j=0; j<2*range4back; j=j+1)
-			back_sum = back_sum + ww[rMaxLocO+range+i][cMaxLocO+range+j]
-		endfor
-	endfor
-	avg_OD = back_sum / range4back^2
+//	back_sum = 0
+//	for (i=x1_back; i<x2_back; i=i+1)
+//		for (j=y1_back; j<y1_back; j=j+1)
+//			back_sum = back_sum + optdepth[i][j]
+//		endfor
+//	endfor
+//	avg_OD =  back_sum/((x2_back-x1_back)*(y2_back-y1_back))
+	//print rMaxLoc, cMaxLoc, threshold, rMaxLoc+range+2*range4back, cMaxLoc-range-2*range4back
 	
 	// Calculate OD of interest
-	make/O/N=6 parameters={rMaxLoc, cMaxLoc, range, avg_OD, OD, (OD - avg_OD * range^2)*(pixelsize/magnification)^2/0.23}
+	// row maximum location, column maximum location, range, average background OD, summation of OD, atom number
+	//make/O/N=6 parameters={DimOffset(optdepth, 0)+rMaxLoc*1.4, DimOffset(optdepth, 1)+cMaxLoc*1.4, range*1.4, avg_OD, OD, (OD - avg_OD * range^2)*(pixelsize/magnification)^2/0.23}
+	//make/O/N=3 parameters={avg_OD, pixel_counted, OD, (OD - avg_OD*pixel_counted)*(pixelsize/magnification)^2/0.23}
+	
+	//return atom number
+	//return (OD - avg_OD *pixel_counted)*(pixelsize/magnification)^2/0.23
+	//return OD*(pixelsize/magnification)^2/0.23
+	return OD*(pixelsize/magnification)^2/(3*0.78^2/2/3.14159/(1+1.9^2*4)/(1+0.5/(1+1.9^2*4)))
 end
 
 //function N_rings()
